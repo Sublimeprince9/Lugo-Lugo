@@ -1,0 +1,11 @@
+{
+  "name": "Lugo-Lugo",
+  "short_name": "LugoLugo",
+  "description": "QR-driven event map and stall passport for exhibitions.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020817",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": []
+}
