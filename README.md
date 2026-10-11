@@ -12,10 +12,11 @@ This repo now contains a visitor-facing prototype with a Supabase-backed check-i
 - camera QR scanning, signed static stall QR verification, and manual stall-ID lookup
 - anonymous Supabase visitor sessions, check-in persistence, coin progress, and duplicate/rate-limit protection
 - cookie-backed Supabase SSR sessions refreshed by Next.js middleware
-- profile and leaderboard pages
+- Supabase-backed visitor profile with persisted coins, check-ins, and available rewards
+- sample leaderboard page
 - installable PWA metadata
 
-Manual stall IDs only look up sample stalls; a signed stall QR is required to check in. Supabase must be configured and seeded before check-ins can be recorded. The event UI still uses sample browse and leaderboard data.
+Manual stall IDs only look up sample stalls; a signed stall QR is required to check in. Supabase must be configured and seeded before check-ins can be recorded. The event browse map and leaderboard still use sample data.
 
 The full product and delivery plan is tracked in [PLAN.md](./PLAN.md).
 
@@ -56,6 +57,14 @@ npm run qr:generate -- uma-fair-2026
 ```
 
 The SVGs are written to `public/qr/uma-fair-2026/` and ignored by git. Regenerate them only when the event or signing secret changes.
+
+For QR codes intended for the hosted app, `QR_SIGNING_SECRET` in the local generator environment must exactly match the deployed app's `QR_SIGNING_SECRET`, and `NEXT_PUBLIC_APP_URL` must be set to the hosted origin. For example:
+
+```bash
+NEXT_PUBLIC_APP_URL=https://lugo-lugo.vercel.app npm run qr:generate -- uma-fair-2026
+```
+
+Changing the signing secret invalidates previously printed codes; regenerate and redistribute those codes after rotating it.
 
 ## Production validation
 
