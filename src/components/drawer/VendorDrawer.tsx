@@ -72,6 +72,16 @@ export function VendorDrawer({ stall }: { stall: Stall }) {
                 MY PASSPORT
               </Link>
             </div>
+            {stall.website && (
+              <a
+                href={stall.website}
+                target="_blank"
+                rel="noreferrer"
+                className="vendor-cta mt-2 block text-center"
+              >
+                VISIT WEBSITE
+              </a>
+            )}
           </>
         )}
       </div>

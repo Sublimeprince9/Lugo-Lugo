@@ -518,11 +518,13 @@ Run the first pilot as invite-and-review onboarding: vendors can submit and main
 ### M4: Exhibitor and admin tools (week 6)
 
 - [x] Pilot vendor application intake form stores pending applications and photos privately for manual organizer review (apply migration 0004 before use)
+- [x] Allowlisted organizer email sign-in and private review queue for vendor applications (apply migration 0006 and configure ORGANIZER_EMAILS)
+- [x] Organizer approval publishes the verified stall and activates its proposed limited voucher with terms; needs-changes and rejection are recorded
 - [ ] Vendor invite and recoverable exhibitor login, separate from visitor anonymous sessions
 - [ ] Verified event/stall assignment; vendor cannot claim a stall by entering its number
 - [ ] Vendor onboarding/edit form for business name, category, description, WhatsApp, optional website, and map pin
 - [ ] Photo upload/camera capture with file limits, preview, publication consent, and approved public media
-- [ ] Draft/submitted/needs-changes/approved/rejected workflow with organizer review and audit history
+- [ ] Vendor-submitted draft/edit workflow and full audit history for application changes
 - [ ] Public event/map queries include approved profiles only; unapproved edits do not alter published data
 - [ ] Optional vendor gift/voucher setup with terms and quantity; organizer approval and atomic claim limits
 - [x] Floating map coin marks a stall with an active, approved gift; QR scan awards the usual check-in coins and the visitor claims the gift separately

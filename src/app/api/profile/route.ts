@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     supabase.from('profiles').select('username').eq('id', authData.user.id).maybeSingle(),
     supabase.from('event_progress').select('coins, stalls_visited').eq('profile_id', authData.user.id).eq('event_id', event.id).maybeSingle(),
     supabase.from('checkins').select('stall_id, created_at, stalls(stall_number, title)').eq('profile_id', authData.user.id).eq('event_id', event.id).order('created_at', { ascending: false }),
-    supabase.from('rewards').select('id, title, kind, requires_verified_phone, stall_id').eq('is_active', true).in('stall_id', eventStalls.map((stall) => stall.id)),
+    supabase.from('rewards').select('id, title, description, kind, requires_verified_phone, stall_id').eq('is_active', true).in('stall_id', eventStalls.map((stall) => stall.id)),
     supabase.from('claims').select('reward_id, code, redeemed_at').eq('profile_id', authData.user.id),
     supabase.from('zones').select('id, name').eq('event_id', event.id).order('name'),
   ]);
@@ -152,6 +152,7 @@ export async function GET(request: NextRequest) {
     rewards: rewardsResult.data.map((reward) => ({
       id: reward.id,
       title: reward.title,
+      description: reward.description,
       kind: reward.kind,
       isActive: true,
       requiresVerifiedPhone: reward.requires_verified_phone,

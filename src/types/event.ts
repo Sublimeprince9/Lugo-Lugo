@@ -9,6 +9,7 @@ export type Stall = {
   y: number;
   description: string;
   whatsapp: string;
+  website?: string | null;
   price: string;
   hasGiftReward?: boolean;
 };

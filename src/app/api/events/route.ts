@@ -19,6 +19,7 @@ const stallSchema = z.object({
   map_y: z.number().int(),
   description: z.string(),
   whatsapp_number: z.string().nullable(),
+  website_url: z.string().nullable(),
   price_range: z.string().nullable(),
 });
 const rewardSchema = z.object({
@@ -69,7 +70,7 @@ export async function GET() {
   const [stallResult, leaderboardResult] = await Promise.all([
     supabase
       .from('stalls_public')
-      .select('id, stall_number, title, category, zone, map_x, map_y, description, whatsapp_number, price_range')
+      .select('id, stall_number, title, category, zone, map_x, map_y, description, whatsapp_number, website_url, price_range')
       .eq('event_slug', eventSlug)
       .order('stall_number'),
     supabase
@@ -125,6 +126,7 @@ export async function GET() {
       y: Math.max(0, Math.min(100, Math.round(stall.map_y / 7))),
       description: stall.description,
       whatsapp: stall.whatsapp_number ?? '',
+      website: stall.website_url,
       price: stall.price_range ?? 'Ask exhibitor',
       hasGiftReward: giftAvailability.get(stall.stall_number) ?? false,
     })),

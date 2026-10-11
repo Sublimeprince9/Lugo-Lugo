@@ -20,6 +20,7 @@ export const eventDataSchema = z.object({
     y: z.number().min(0).max(100),
     description: z.string(),
     whatsapp: z.string(),
+    website: z.string().nullable().optional(),
     price: z.string(),
     hasGiftReward: z.boolean().default(false),
   })),

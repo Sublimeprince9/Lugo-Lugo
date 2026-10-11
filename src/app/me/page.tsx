@@ -27,6 +27,7 @@ const profileSchema = z.object({
   rewards: z.array(z.object({
     id: z.string().uuid(),
     title: z.string(),
+    description: z.string(),
     kind: z.enum(['coins', 'voucher', 'prize']),
     isActive: z.boolean(),
     requiresVerifiedPhone: z.boolean(),
@@ -304,6 +305,7 @@ export default function MePage() {
               <span className="reward-icon">{reward.kind === 'voucher' ? '★' : '✦'}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-[#fff2c3]">{reward.title}</p>
+                {reward.description && <p className="mt-1 text-xs leading-5 text-[#b8c6aa]">{reward.description}</p>}
                 <p className="hud-label">
                   {reward.kind === 'coins'
                     ? 'COINS AWARDED AUTOMATICALLY'
