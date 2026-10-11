@@ -27,14 +27,16 @@
 | 4 | QR stall check-in | Scan stall QR, server validates, awards coins/reward |
 | 5 | Coins + stalls-visited progress ("fog of war" per zone) | Tied to check-ins only |
 | 6 | Leaderboard | Stalls visited, coins |
-| 7 | Voucher claim | Needs phone-verified profile |
-| 8 | Exhibitor dashboard | Taps, check-ins, WhatsApp clicks, claims |
-| 9 | Admin panel | Create event, import stalls, generate QR sheets |
-| 10 | Installable PWA, offline map shell | Works on slow 3G |
+| 7 | Vendor gift/voucher claim | Limited quantity; visitor checks in and meets any configured eligibility rules |
+| 8 | Vendor onboarding and approved stall profiles | Vendor contact, website, photos, map placement; organizer reviews before publishing |
+| 9 | Exhibitor dashboard | Taps, check-ins, WhatsApp clicks, claims |
+| 10 | Admin panel | Create event, import stalls, assign vendors, review profiles, generate QR sheets |
+| 11 | Installable PWA, offline map shell | Works on slow 3G |
 
 ### 1.2 Out of scope (post-MVP)
 
 - Live GPS avatar, A* wayfinding, indoor positioning
+- GPS-based stall navigation for the initial release; optional outdoor stall coordinates may supplement, but never replace, event map placement
 - Payments inside the app (exhibitor billing is manual/invoice at first)
 - Native apps
 - Chat, social features, friends
@@ -409,13 +411,51 @@ Progress per zone = visited stalls in that zone ÷ total stalls in that zone. Re
 1. **Source:** organizer floor plan (PDF/image). Outdoor outlines may supplement from OpenStreetMap.
 2. **Normalize:** pick a fixed map size (for example 2048×2048 logical pixels at 16 px per tile = 128×128 tiles).
 3. **Author:** draw the pixel-art map in Tiled (or Aseprite), export a PNG atlas and a `map.json` (tile layers, zone rectangles, stall anchor points).
-4. **Import stalls:** CSV with `stall_number,title,category,whatsapp_number,zone,map_x,map_y` → `scripts/import-stalls.ts`.
+4. **Import stalls:** CSV with `stall_number,title,category,whatsapp_number,website_url,zone,map_x,map_y` → `scripts/import-stalls.ts`. Map coordinates remain the source of truth for indoor placement.
 5. **Optimize:** compress PNGs, keep total initial payload under 2.5 MB, generate a lower-res preview for first paint.
 6. **Cache:** service worker precaches the atlas and `map.json` for the event.
 
 Budget the map art as its own work item. It is the largest unknown in M1 and repeats for every new venue.
 
 `TODO(decision)`: draw it yourself, commission a pixel artist, or auto-generate a simplified tilemap from the floor plan for MVP and polish later.
+
+---
+
+## 9.1 Vendor onboarding procedure
+
+Run the first pilot as invite-and-review onboarding: vendors can submit and maintain drafts, but an organizer verifies ownership and publishes each profile. Do not let an unverified signup claim an existing stall number or publish directly.
+
+### Vendor journey
+
+1. Organizer invites a vendor and confirms the event, stall number, and primary contact from the exhibitor list.
+2. Vendor signs in using a recoverable vendor account (passwordless email link is the initial recommendation; keep visitor anonymous auth separate).
+3. Vendor completes a draft profile: business/display name, category, description, WhatsApp number, optional website, and stall location on the event map.
+4. Vendor optionally uploads or takes photos on a phone, confirms permission to publish them, and previews the public listing.
+5. Vendor optionally proposes a limited gift/voucher: visitor-facing description and terms, quantity/claim limit, and whether phone verification is required. The offer is not visible or claimable until approved.
+6. Organizer reviews vendor ownership, listing details, map location, photo consent/content, and gift terms; returns incomplete submissions or approves/rejects them.
+7. Approved listing and offer become public. Generate the signed stall QR only for the verified stall, provide it to the vendor, and record approval/QR issuance.
+8. Vendor can request edits later; changes to stall identity, ownership, location, photos, or gift terms return to review when they affect visitor trust or existing claims.
+
+### Implementation decisions and safeguards
+
+- **Identity and ownership:** add explicit vendor accounts and an audited event/stall membership relationship. Use organizer-issued invitations or assignment; never infer ownership from a typed stall number or WhatsApp address.
+- **Review lifecycle:** model draft, submitted, needs-changes, approved/published, and rejected states with reviewer, timestamps, and reason. Public map queries must include approved/published records only.
+- **Profile fields:** add `website_url`; keep validated phone/WhatsApp separate from the vendor login email. Store photos in a private upload flow with size/type limits, then expose only approved images via public storage paths or controlled image delivery. Vendor photo consent is required.
+- **Location:** require a pin/coordinates on the event floor plan (existing `map_x`/`map_y`, scoped to event map dimensions). Provide organizer correction and preview. Do not use visitor GPS as check-in proof.
+- **Optional outdoor GPS:** if needed, add nullable WGS84 latitude/longitude for a stall, collected only for outdoor placements or entrance guidance. State its public use, validate ranges, and keep it independent of floor-plan coordinates. Indoor GPS and live visitor tracking remain out of scope.
+- **Gifts:** reuse `rewards` and the atomic claim path, including the configured quantity/claim limit and one claim per visitor. Do not allow vendors to alter a reward after claims exist without review. Redemption still needs authenticated exhibitor tooling; for the first pilot, document any manual redemption procedure. Decide phone-verification policy per offer; OTP is a prerequisite only where a reward requires verified phone.
+- **QR security:** only organizers issue signed QR codes after stall ownership/location approval. Vendor profile edits must never expose `qr_secret` or grant access to QR-signing credentials.
+- **Pilot operations:** while self-service is built, organizers may collect the same form fields through a controlled form/spreadsheet and enter/review profiles themselves. This enables early vendor onboarding without granting unreviewed database access.
+
+### Delivery order
+
+1. Pilot checklist and organizer/vendor intake form; verify field requirements with a small vendor cohort.
+2. Schema, migration, vendor authentication/invitations, stall assignment, and RLS/authorization tests.
+3. Draft submission/editing UI with map pin, website/contact validation, and photo upload.
+4. Organizer review/publish queue and audit trail; ensure public event API filters unpublished profiles.
+5. Gift offer configuration and approval, connected to claim limits; then exhibitor redemption workflow.
+6. Vendor QR issuance, setup guide, and end-to-end pilot test on vendor and visitor phones.
+7. Optional outdoor GPS fields and map affordances only after confirming an outdoor navigation use case and device accuracy.
 
 ---
 
@@ -441,6 +481,7 @@ Budget the map art as its own work item. It is the largest unknown in M1 and rep
 - [ ] Stall markers by category (distinct icon/colour), tap target at least 44 px
 - [ ] `FilterBar` chips; non-matching stalls dim, matching animate
 - [ ] `VendorDrawer` (slide-up, swipe to close): media carousel, description, price list
+- [ ] Display approved vendor photos and optional website in the vendor listing/drawer
 - [ ] "Chat on WhatsApp" using `https://wa.me/<number>?text=<prefilled message>`; log `whatsapp_click`
 - [ ] Search by stall name/number
 - [ ] PWA manifest, icons, service worker, offline map shell
@@ -476,14 +517,22 @@ Budget the map art as its own work item. It is the largest unknown in M1 and rep
 
 ### M4: Exhibitor and admin tools (week 6)
 
-- [ ] Exhibitor login (magic link or phone) tied to `stalls.owner_id`
+- [x] Pilot vendor application intake form stores pending applications and photos privately for manual organizer review (apply migration 0004 before use)
+- [ ] Vendor invite and recoverable exhibitor login, separate from visitor anonymous sessions
+- [ ] Verified event/stall assignment; vendor cannot claim a stall by entering its number
+- [ ] Vendor onboarding/edit form for business name, category, description, WhatsApp, optional website, and map pin
+- [ ] Photo upload/camera capture with file limits, preview, publication consent, and approved public media
+- [ ] Draft/submitted/needs-changes/approved/rejected workflow with organizer review and audit history
+- [ ] Public event/map queries include approved profiles only; unapproved edits do not alter published data
+- [ ] Optional vendor gift/voucher setup with terms and quantity; organizer approval and atomic claim limits
+- [ ] Generate and issue signed stall QR only after stall ownership and profile approval
 - [ ] Dashboard: taps, check-ins, WhatsApp clicks, claims, by day/hour; CSV export
-- [ ] Exhibitor can edit description, media, price list, and see/redeem claim codes
-- [ ] Admin: create event, upload map assets, import stalls CSV, assign owners
+- [ ] Exhibitor can edit approved listing fields and see/redeem claim codes, without access to QR secrets
+- [ ] Admin: create event, upload map assets, import stalls CSV, assign vendors, review/publish listings and offers
 - [ ] `generate-qr-sheet.ts`: printable PDF with one QR per stall (stall number and name under each) plus entrance standee QR
 - [ ] Featured pin flag shows an animated pixel logo on the map
 
-**Exit gate:** you can set up a new 100-stall event from CSV + map files in under one hour, and an exhibitor can read their stats without help.
+**Exit gate:** an invited vendor can submit a profile, photos, map position and optional gift; an organizer can review and publish it; the listing appears publicly only after approval; and an exhibitor can read stats and redeem an eligible claim.
 
 ### M5: Hardening and pilot (week 7)
 
@@ -491,6 +540,7 @@ Budget the map art as its own work item. It is the largest unknown in M1 and rep
 - [ ] Supabase: connection pooling on, indexes verified with `EXPLAIN` on hot queries
 - [ ] Error monitoring (Sentry free tier) and uptime check
 - [ ] Privacy basics: short privacy notice, minimal data (username, phone only if verified), data deletion on request, retention period after the event. Check Uganda's Data Protection and Privacy Act requirements for phone numbers and consent.
+- [ ] Vendor data policy: photo publication consent, contact/website visibility, optional outdoor-coordinate visibility, and retention/deletion process
 - [ ] Accessibility pass: contrast, tap targets, text scaling, no flashing animations
 - [ ] Data-saver mode: skip animations and reduce asset quality on slow connections
 - [ ] Staff briefing sheet for stall owners (how to scan, redeem, troubleshoot)

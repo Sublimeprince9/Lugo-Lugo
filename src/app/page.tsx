@@ -192,6 +192,9 @@ export default function HomePage() {
                   ))}
                 </div>
               )}
+              <div className="mt-5 text-center">
+                <Link href="/vendors/apply" className="pixel-link">ARE YOU A VENDOR? APPLY TO JOIN ↗</Link>
+              </div>
             </div>
           </>
         )}
