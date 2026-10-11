@@ -1,4 +1,4 @@
-export type Category = 'All' | 'Luxury' | 'Food' | 'Drinks' | 'Science' | 'Farming' | 'Tech';
+export type Category = 'All' | 'Luxury' | 'Food' | 'Drinks' | 'Science' | 'Farming' | 'Tech' | 'Other';
 
 export type Stall = {
   id: string;

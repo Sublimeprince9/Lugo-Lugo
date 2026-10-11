@@ -1,6 +1,6 @@
 import type { Category, Stall } from '@/types/event';
 
-export const categories: Category[] = ['All', 'Luxury', 'Food', 'Drinks', 'Science', 'Farming', 'Tech'];
+export const categories: Category[] = ['All', 'Luxury', 'Food', 'Drinks', 'Science', 'Farming', 'Tech', 'Other'];
 
 export const categoryStyles: Record<Exclude<Category, 'All'>, string> = {
   Luxury: 'luxury',
@@ -9,6 +9,7 @@ export const categoryStyles: Record<Exclude<Category, 'All'>, string> = {
   Science: 'science',
   Farming: 'farming',
   Tech: 'tech',
+  Other: 'other',
 };
 
 export const stalls: Stall[] = [

@@ -6,17 +6,17 @@ Lugo-Lugo is a mobile-first PWA for event discovery at large venues like UMA Sho
 
 This repo now contains a visitor-facing prototype with a Supabase-backed check-in path:
 
-- mobile-first pixel-art map prototype rendered with PixiJS
+- mobile-first pixel-art event map rendered with PixiJS and published Supabase stalls
 - category filters and tappable stall markers
 - stall drawer with WhatsApp deep links and price info
 - camera QR scanning, signed static stall QR verification, and manual stall-ID lookup
 - anonymous Supabase visitor sessions, check-in persistence, coin progress, and duplicate/rate-limit protection
 - cookie-backed Supabase SSR sessions refreshed by Next.js middleware
 - Supabase-backed visitor profile with persisted coins, check-ins, and available rewards
-- sample leaderboard page
+- Supabase-backed public leaderboard
 - installable PWA metadata
 
-Manual stall IDs only look up sample stalls; a signed stall QR is required to check in. Supabase must be configured and seeded before check-ins can be recorded. The event browse map and leaderboard still use sample data.
+Manual stall IDs only look up stalls; a signed stall QR is required to check in. Supabase must be configured and seeded before event browsing, profiles, rankings, and check-ins are available.
 
 The full product and delivery plan is tracked in [PLAN.md](./PLAN.md).
 

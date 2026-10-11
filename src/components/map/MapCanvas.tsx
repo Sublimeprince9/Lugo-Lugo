@@ -14,6 +14,7 @@ const CATEGORY_COLORS: Record<Exclude<Category, 'All'>, number> = {
   Science: 0x76baff,
   Farming: 0xa5d86d,
   Tech: 0xc795ff,
+  Other: 0xd5c88d,
 };
 
 function createBlock(
