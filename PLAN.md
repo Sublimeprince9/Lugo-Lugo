@@ -454,13 +454,15 @@ Budget the map art as its own work item. It is the largest unknown in M1 and rep
 - [x] Scanner page with camera permission handling and a manual-code lookup fallback
 - [x] `/api/checkin` with static HMAC QR verification, auth check, and an atomic Postgres RPC
 - [ ] Coin animation, check-in toast, per-zone fog-of-war progress
-- [ ] Leaderboard page and `/api/leaderboard` (cache 10 to 30 seconds)
-- [ ] Profile screen: username edit, coins, vouchers
+- [x] Supabase-backed leaderboard view on the event and leaderboard pages (still needs cache policy)
+- [x] Profile screen: persisted coins, check-ins, and reward inventory
+- [ ] Profile username editing
 - [ ] Phone verification flow (OTP) for prize claims
-- [ ] `/api/claim` with atomic claim limits
+- [x] `/api/claim` with atomic claim limits (`0002_claim_reward.sql`; apply to hosted Supabase before enabling claims)
 - [x] Postgres-based check-in rate limiting (10 per visitor and 30 per IP per 10 minutes)
 - [x] Unit tests for static QR signing/verification; check-in API input/auth/config tests
 - [ ] Database integration tests for check-in and claim
+- [ ] Apply and concurrency-test the reward claim migration against local/hosted Postgres
 
 **Abuse test (must pass):**
 - [ ] Same QR scanned twice → one check-in only

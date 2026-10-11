@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     supabase.from('event_progress').select('coins, stalls_visited').eq('profile_id', authData.user.id).eq('event_id', event.id).maybeSingle(),
     supabase.from('checkins').select('stall_id, created_at, stalls(stall_number, title)').eq('profile_id', authData.user.id).eq('event_id', event.id).order('created_at', { ascending: false }),
     supabase.from('rewards').select('id, title, kind, requires_verified_phone, stall_id').eq('is_active', true).in('stall_id', eventStalls.map((stall) => stall.id)),
-    supabase.from('claims').select('reward_id').eq('profile_id', authData.user.id),
+    supabase.from('claims').select('reward_id, code, redeemed_at').eq('profile_id', authData.user.id),
   ]);
 
   const queryError = [
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     return sendResponse({ error: 'Could not load your saved profile. Please try again.' }, 500);
   }
 
-  const claimIds = new Set(claimsResult.data.map((claim) => claim.reward_id));
+  const claimsByReward = new Map(claimsResult.data.map((claim) => [claim.reward_id, claim]));
   const stallCheckins = new Set(checkinsResult.data.map((checkin) => checkin.stall_id));
   const checkinSchema = z.object({
     stall_number: z.string(),
@@ -124,7 +124,10 @@ export async function GET(request: NextRequest) {
       isActive: true,
       requiresVerifiedPhone: reward.requires_verified_phone,
       checkedInAtStall: stallCheckins.has(reward.stall_id),
-      claimed: claimIds.has(reward.id),
+      claimed: claimsByReward.has(reward.id),
+      claimCode: claimsByReward.get(reward.id)?.code ?? null,
+      redeemed: claimsByReward.get(reward.id)?.redeemed_at !== null
+        && claimsByReward.get(reward.id)?.redeemed_at !== undefined,
     })),
   }, 200);
 }

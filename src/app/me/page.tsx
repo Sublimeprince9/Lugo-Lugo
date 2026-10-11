@@ -25,7 +25,17 @@ const profileSchema = z.object({
     requiresVerifiedPhone: z.boolean(),
     checkedInAtStall: z.boolean(),
     claimed: z.boolean(),
+    claimCode: z.string().nullable(),
+    redeemed: z.boolean(),
   })),
+});
+const claimResponseSchema = z.object({
+  success: z.literal(true),
+  claimId: z.string().uuid(),
+  code: z.string(),
+  title: z.string(),
+  alreadyClaimed: z.boolean(),
+  redeemed: z.boolean(),
 });
 
 type ProfileData = z.infer<typeof profileSchema>;
@@ -35,6 +45,8 @@ export default function MePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [claimingRewardId, setClaimingRewardId] = useState<string | null>(null);
+  const [claimMessage, setClaimMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (sessionStatus !== 'ready') return;
@@ -69,8 +81,47 @@ export default function MePage() {
     };
   }, [sessionStatus]);
 
-  const claimedRewardIds = new Set(profile?.rewards.filter((reward) => reward.claimed).map((reward) => reward.id));
-  const availableRewards = profile?.rewards.filter((reward) => reward.isActive && !reward.claimed) ?? [];
+  async function claimReward(rewardId: string) {
+    setClaimingRewardId(rewardId);
+    setClaimMessage(null);
+    try {
+      const response = await fetch('/api/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rewardId }),
+      });
+      const payload: unknown = await response.json();
+      if (!response.ok) {
+        const errorPayload = z.object({ error: z.string() }).safeParse(payload);
+        throw new Error(errorPayload.success ? errorPayload.data.error : 'Could not claim this reward.');
+      }
+      const result = claimResponseSchema.safeParse(payload);
+      if (!result.success) {
+        console.error('Claim API returned an invalid response.', result.error);
+        throw new Error('The reward claim returned an unexpected response.');
+      }
+      setProfile((current) => current ? {
+        ...current,
+        rewards: current.rewards.map((reward) => reward.id === rewardId ? {
+          ...reward,
+          claimed: true,
+          claimCode: result.data.code,
+          redeemed: result.data.redeemed,
+        } : reward),
+      } : current);
+      setClaimMessage(result.data.alreadyClaimed
+        ? `${result.data.title} was already claimed. Your code is shown below.`
+        : `${result.data.title} claimed! Show its code at the stall.`);
+    } catch (cause) {
+      setClaimMessage(cause instanceof Error ? cause.message : 'Could not claim this reward.');
+    } finally {
+      setClaimingRewardId(null);
+    }
+  }
+
+  const activeRewards = profile?.rewards.filter((reward) => reward.isActive) ?? [];
+  const availableRewards = activeRewards.filter((reward) => !reward.claimed);
+  const claimedRewards = profile?.rewards.filter((reward) => reward.claimed) ?? [];
 
   return (
     <main className="game-shell mx-auto min-h-screen max-w-md px-4 py-6 text-slate-100">
@@ -133,7 +184,7 @@ export default function MePage() {
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="pixel-eyebrow text-lime-300">REWARD INVENTORY</p>
-            <h2 className="mt-1 text-base font-black text-[#fff2c3]">Available rewards</h2>
+            <h2 className="mt-1 text-base font-black text-[#fff2c3]">Stall rewards</h2>
           </div>
           <span className="rank-token">{String(availableRewards.length).padStart(2, '0')}</span>
         </div>
@@ -148,17 +199,47 @@ export default function MePage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-[#fff2c3]">{reward.title}</p>
                 <p className="hud-label">
-                  {reward.requiresVerifiedPhone ? 'PHONE VERIFICATION REQUIRED' : reward.checkedInAtStall ? 'READY' : 'VISIT THE STALL TO UNLOCK'}
+                  {reward.kind === 'coins'
+                    ? 'COINS AWARDED AUTOMATICALLY'
+                    : reward.requiresVerifiedPhone
+                    ? 'PHONE VERIFICATION REQUIRED'
+                    : reward.checkedInAtStall ? 'READY TO CLAIM' : 'VISIT THE STALL TO UNLOCK'}
                 </p>
               </div>
-              <span className="reward-status">
-                {reward.requiresVerifiedPhone ? 'VERIFY' : reward.checkedInAtStall ? 'READY' : 'LOCKED'}
-              </span>
+              {reward.kind !== 'coins' && reward.checkedInAtStall && !reward.requiresVerifiedPhone ? (
+                <button
+                  type="button"
+                  className="reward-status"
+                  disabled={claimingRewardId !== null}
+                  onClick={() => void claimReward(reward.id)}
+                >
+                  {claimingRewardId === reward.id ? 'CLAIMING' : 'CLAIM'}
+                </button>
+              ) : (
+                <span className="reward-status">
+                  {reward.kind === 'coins' ? 'AUTO' : reward.requiresVerifiedPhone ? 'VERIFY' : 'LOCKED'}
+                </span>
+              )}
             </div>
           ))}
         </div>
-        {claimedRewardIds.size > 0 && (
-          <p className="mt-3 text-xs text-[#b8c6aa]">{claimedRewardIds.size} reward{claimedRewardIds.size === 1 ? '' : 's'} already claimed.</p>
+        {claimMessage && <p className="mt-3 text-sm text-[#c6e877]" role="status">{claimMessage}</p>}
+        {claimedRewards.length > 0 && (
+          <div className="mt-4 border-t border-[#3b5749] pt-3">
+            <p className="pixel-eyebrow mb-2">CLAIMED CODES</p>
+            <div className="space-y-2">
+              {claimedRewards.map((reward) => (
+                <div className="reward-row" key={reward.id}>
+                  <span className="reward-icon reward-icon-purple">★</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-[#fff2c3]">{reward.title}</p>
+                    <p className="hud-label">{reward.redeemed ? 'REDEEMED' : `CODE ${reward.claimCode ?? 'UNAVAILABLE'}`}</p>
+                  </div>
+                  <span className="reward-status">{reward.redeemed ? 'USED' : 'CLAIMED'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </section>
 

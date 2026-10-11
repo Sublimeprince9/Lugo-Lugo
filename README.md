@@ -14,9 +14,11 @@ This repo now contains a visitor-facing prototype with a Supabase-backed check-i
 - cookie-backed Supabase SSR sessions refreshed by Next.js middleware
 - Supabase-backed visitor profile with persisted coins, check-ins, and available rewards
 - Supabase-backed public leaderboard
+- atomic voucher/prize claims with per-reward limits and visitor-owned claim codes
 - installable PWA metadata
 
 Manual stall IDs only look up stalls; a signed stall QR is required to check in. Supabase must be configured and seeded before event browsing, profiles, rankings, and check-ins are available.
+Phone-verified rewards stay unavailable until a phone verification flow is configured. Claim codes are visitor-scoped and are not yet redeemable through an exhibitor dashboard.
 
 The full product and delivery plan is tracked in [PLAN.md](./PLAN.md).
 
@@ -42,7 +44,7 @@ Apply the migrations and sample UMA event data:
 npx supabase db reset
 ```
 
-Anonymous sign-in is enabled for the local stack in `supabase/config.toml`. For a hosted project, run `supabase/migrations/0001_init_schema.sql` and then `supabase/seed.sql` in the Supabase Dashboard SQL Editor, in that order. Run the seed only once; it inserts fixed sample IDs. In the Supabase Dashboard, enable anonymous sign-ins under Authentication provider settings. A disabled provider returns “Anonymous sign-ins are disabled” when the visitor session starts. Restart the Next.js server after changing `.env.local`.
+Anonymous sign-in is enabled for the local stack in `supabase/config.toml`. For a hosted project, run the SQL migrations in numbered order (`0001_init_schema.sql`, then `0002_claim_reward.sql`) and then `supabase/seed.sql` in the Supabase Dashboard SQL Editor. Run the seed only once; it inserts fixed sample IDs. In the Supabase Dashboard, enable anonymous sign-ins under Authentication provider settings. A disabled provider returns “Anonymous sign-ins are disabled” when the visitor session starts. Restart the Next.js server after changing `.env.local`.
 
 Start the app:
 
