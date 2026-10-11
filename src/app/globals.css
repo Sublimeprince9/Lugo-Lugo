@@ -321,6 +321,20 @@ body {
 .farm-dot { background: #a5d86d; }
 .undiscovered-dot { background: #849182; opacity: 0.55; }
 
+.legend-coin {
+  display: inline-grid;
+  width: 9px;
+  height: 9px;
+  place-items: center;
+  border: 1px solid #fff0b3;
+  border-radius: 50%;
+  background: #f6cb65;
+  color: #65431f;
+  font-size: 0.42rem;
+  font-style: normal;
+  line-height: 1;
+}
+
 .map-zoom-controls {
   position: absolute;
   top: 0.55rem;
@@ -490,6 +504,9 @@ body {
 }
 
 .vendor-reward {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
   padding: 0.4rem 0.5rem;
   border: 1px solid #a17b3e;
   background: #4e4028;
@@ -497,6 +514,11 @@ body {
   font-size: 0.55rem;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.vendor-reward span + span {
+  color: #fff0b3;
+  font-size: 0.46rem;
 }
 
 .vendor-cta {

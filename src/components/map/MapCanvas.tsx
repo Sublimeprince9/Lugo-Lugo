@@ -38,6 +38,7 @@ function createMapArt(
   world.eventMode = 'static';
   world.hitArea = new PIXI.Rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
   const boothMarkers = new Map<string, { marker: Container; label: PixiText }>();
+  const giftCoins: Array<{ container: Container; originY: number; phase: number }> = [];
 
   const ground = new PIXI.Graphics();
   createBlock(ground, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0x598b4e);
@@ -145,6 +146,28 @@ function createMapArt(
     label.x = x + 5;
     label.y = y - 20;
 
+    if (stall.hasGiftReward) {
+      const coin = new PIXI.Container();
+      const coinFace = new PIXI.Graphics();
+      coinFace.circle(0, 0, 10).fill(0xf6cb65).stroke({ color: 0xfff0b3, width: 2 });
+      coinFace.circle(0, 0, 6).stroke({ color: 0x8c5b29, width: 1 });
+      const coinText = new PIXI.Text({
+        text: '¢',
+        style: new PIXI.TextStyle({
+          fontFamily: 'monospace',
+          fontSize: 10,
+          fontWeight: 'bold',
+          fill: 0x65431f,
+        }),
+      });
+      coinText.anchor.set(0.5);
+      coin.addChild(coinFace, coinText);
+      coin.x = x + 31;
+      coin.y = y - 31;
+      marker.addChild(coin);
+      giftCoins.push({ container: coin, originY: coin.y, phase: giftCoins.length * 1.37 });
+    }
+
     const target = new PIXI.Graphics();
     target.rect(x - 28, y - 18, 66, 54).fill({ color: 0xffffff, alpha: 0.001 });
     target.eventMode = 'static';
@@ -178,7 +201,7 @@ function createMapArt(
   title.y = 36;
   world.addChild(marquee, title);
 
-  return { world, boothMarkers };
+  return { world, boothMarkers, giftCoins };
 }
 
 export function MapCanvas({
@@ -235,7 +258,7 @@ export function MapCanvas({
         nextApp.canvas.setAttribute('aria-label', 'Interactive pixel-art map of UMA Showgrounds');
         mount.appendChild(nextApp.canvas);
 
-        const { world, boothMarkers } = createMapArt(
+        const { world, boothMarkers, giftCoins } = createMapArt(
           PIXI,
           stalls,
           onSelect,
@@ -244,6 +267,13 @@ export function MapCanvas({
         worldRef.current = world;
         boothMarkersRef.current = boothMarkers;
         nextApp.stage.addChild(world);
+        const animateGiftCoins = () => {
+          const time = nextApp.ticker.lastTime / 350;
+          giftCoins.forEach(({ container, originY, phase }) => {
+            container.y = originY + Math.sin(time + phase) * 3;
+          });
+        };
+        nextApp.ticker.add(animateGiftCoins);
 
         const fitMap = () => {
           if (!app || !mount.isConnected) return;
@@ -285,6 +315,7 @@ export function MapCanvas({
         return () => {
           mount.removeEventListener('wheel', handleWheel);
           resizeObserver.disconnect();
+          nextApp.ticker.remove(animateGiftCoins);
         };
       } catch (error) {
         if (!cancelled) {
@@ -348,6 +379,7 @@ export function MapCanvas({
           <span><i className="legend-dot tech-dot" /> TECH</span>
           <span><i className="legend-dot farm-dot" /> FARM</span>
           <span><i className="legend-dot undiscovered-dot" /> UNDISCOVERED</span>
+          <span><i className="legend-coin">¢</i> GIFT TO CLAIM</span>
         </div>
         <div className="map-zoom-controls" aria-label="Map zoom controls">
           <button

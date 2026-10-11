@@ -220,7 +220,7 @@ export default function VendorApplicationPage() {
               <input name="giftQuantity" className="game-input" type="number" min="1" max="10000" step="1" />
             </label>
             <p className="text-[10px] leading-4 text-[#8fa18a]">
-              Gift offers are proposals, not live rewards. The organizer must approve the terms and quantity. Visitors would unlock an approved offer by checking in at your stall.
+              Gift offers are proposals, not live rewards. The organizer must approve the terms and quantity. An approved offer shows a floating coin on your map stall; visitors scan the stall QR for the usual check-in coins, then claim the gift separately in their passport.
             </p>
           </section>
 

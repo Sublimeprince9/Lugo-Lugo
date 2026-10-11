@@ -10,6 +10,7 @@ const eventSchema = z.object({
   slug: z.string(),
 });
 const stallSchema = z.object({
+  id: z.string().uuid(),
   stall_number: z.string(),
   title: z.string(),
   category: z.enum(['Luxury', 'Food', 'Drinks', 'Science', 'Farming', 'Tech', 'Other']),
@@ -20,12 +21,18 @@ const stallSchema = z.object({
   whatsapp_number: z.string().nullable(),
   price_range: z.string().nullable(),
 });
+const rewardSchema = z.object({
+  stall_number: z.string(),
+  has_gift_reward: z.boolean(),
+});
 const leaderboardSchema = z.object({
   username: z.string(),
   coins: z.number().int().nonnegative(),
   stalls_visited: z.number().int().nonnegative(),
   rank: z.number().int().positive(),
 });
+
+export const dynamic = 'force-dynamic';
 
 function failure(message: string, status: number) {
   return NextResponse.json({ error: message }, {
@@ -62,7 +69,7 @@ export async function GET() {
   const [stallResult, leaderboardResult] = await Promise.all([
     supabase
       .from('stalls_public')
-      .select('stall_number, title, category, zone, map_x, map_y, description, whatsapp_number, price_range')
+      .select('id, stall_number, title, category, zone, map_x, map_y, description, whatsapp_number, price_range')
       .eq('event_slug', eventSlug)
       .order('stall_number'),
     supabase
@@ -89,6 +96,24 @@ export async function GET() {
     return failure('Event data is temporarily unavailable.', 500);
   }
 
+  const rewardsResult = await supabase
+    .from('stall_gift_markers')
+    .select('stall_number, has_gift_reward')
+    .eq('event_slug', eventSlug);
+  if (rewardsResult.error) {
+    console.error('Could not load public stall gift availability.', rewardsResult.error);
+    return failure('Could not load stall rewards. Please try again.', 500);
+  }
+  const rewards = z.array(rewardSchema).safeParse(rewardsResult.data);
+  if (!rewards.success) {
+    console.error('Public stall rewards returned an invalid shape.', rewards.error);
+    return failure('Stall rewards are temporarily unavailable.', 500);
+  }
+  const giftAvailability = new Map(rewards.data.map((reward) => [
+    reward.stall_number,
+    reward.has_gift_reward,
+  ]));
+
   return NextResponse.json({
     event: event.data,
     stalls: stalls.data.map((stall) => ({
@@ -101,6 +126,7 @@ export async function GET() {
       description: stall.description,
       whatsapp: stall.whatsapp_number ?? '',
       price: stall.price_range ?? 'Ask exhibitor',
+      hasGiftReward: giftAvailability.get(stall.stall_number) ?? false,
     })),
     leaderboard: leaderboard.data.map((entry) => ({
       name: entry.username,

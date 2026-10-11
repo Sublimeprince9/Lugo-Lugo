@@ -10,6 +10,7 @@ export type Stall = {
   description: string;
   whatsapp: string;
   price: string;
+  hasGiftReward?: boolean;
 };
 
 export type EventStat = {

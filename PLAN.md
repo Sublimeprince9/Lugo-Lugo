@@ -525,6 +525,7 @@ Run the first pilot as invite-and-review onboarding: vendors can submit and main
 - [ ] Draft/submitted/needs-changes/approved/rejected workflow with organizer review and audit history
 - [ ] Public event/map queries include approved profiles only; unapproved edits do not alter published data
 - [ ] Optional vendor gift/voucher setup with terms and quantity; organizer approval and atomic claim limits
+- [x] Floating map coin marks a stall with an active, approved gift; QR scan awards the usual check-in coins and the visitor claims the gift separately
 - [ ] Generate and issue signed stall QR only after stall ownership and profile approval
 - [ ] Dashboard: taps, check-ins, WhatsApp clicks, claims, by day/hour; CSV export
 - [ ] Exhibitor can edit approved listing fields and see/redeem claim codes, without access to QR secrets

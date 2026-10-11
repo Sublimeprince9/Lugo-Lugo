@@ -21,6 +21,7 @@ export const eventDataSchema = z.object({
     description: z.string(),
     whatsapp: z.string(),
     price: z.string(),
+    hasGiftReward: z.boolean().default(false),
   })),
   leaderboard: z.array(z.object({
     name: z.string(),

@@ -32,12 +32,21 @@ export function VendorDrawer({ stall }: { stall: Stall }) {
             <p className="pixel-eyebrow text-lime-300">STALL {stall.id}</p>
             <h3 className="truncate text-base font-black leading-tight text-[#fff2c3]">{stall.title}</h3>
           </div>
-          <span className="vendor-reward">+60 COINS</span>
+          <span className="vendor-reward">
+            <span>+60 COINS</span>
+            {stall.hasGiftReward && <span>✦ GIFT READY</span>}
+          </span>
         </div>
 
         {expanded && (
           <>
             <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#bac8aa]">{stall.description}</p>
+
+            {stall.hasGiftReward && (
+              <p className="mt-2 border border-[#8b703a] bg-[#3a3425] p-2 text-[10px] font-bold leading-4 text-[#f6cb65]">
+                GIFT AVAILABLE · SCAN THIS STALL&apos;S QR TO EARN YOUR CHECK-IN COINS, THEN CLAIM THE GIFT IN YOUR PASSPORT.
+              </p>
+            )}
 
             <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
               <div className="border border-[#3a5546] bg-[#172b2b] p-2">
