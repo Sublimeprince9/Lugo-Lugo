@@ -652,6 +652,49 @@ body {
   background: #20372f;
 }
 
+.checkin-reward {
+  padding: 0.75rem;
+  border: 1px solid #536b53;
+  background: rgba(15, 31, 29, 0.72);
+}
+
+.coin-reward-pop {
+  color: #f6cb65;
+  font-size: 1.5rem;
+  font-weight: 1000;
+  line-height: 1.2;
+  animation: coin-reward-pop 500ms ease-out both;
+}
+
+.coin-reward-pop span {
+  font-size: 0.9rem;
+}
+
+.reward-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid #526b4b;
+  background: #101d20;
+}
+
+.reward-progress-track span {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(90deg, #bde56a 0 8px, #9bc65b 8px 10px);
+  transition: width 280ms ease-out;
+}
+
+@keyframes coin-reward-pop {
+  0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+  70% { opacity: 1; transform: translateY(-2px) scale(1.08); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin-reward-pop { animation: none; }
+  .reward-progress-track span { transition: none; }
+}
+
 .leader-podium {
   display: flex;
   min-height: 90px;

@@ -26,6 +26,7 @@ const checkinResponseSchema = z.object({
   voucherAvailable: z.boolean(),
 });
 const apiErrorSchema = z.object({ error: z.string() });
+type CheckinResult = z.infer<typeof checkinResponseSchema>;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -72,6 +73,7 @@ export default function ScanPage() {
   const [cameraState, setCameraState] = useState<'idle' | 'starting' | 'scanning' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [checkinState, setCheckinState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [checkinResult, setCheckinResult] = useState<CheckinResult | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const handledQueryTokenRef = useRef<string | null>(null);
   const scanHandledRef = useRef(false);
@@ -98,6 +100,7 @@ export default function ScanPage() {
 
     setScannedContent(scannedValue);
     setRecognizedStall(null);
+    setCheckinResult(null);
     setCheckinState('submitting');
     setMessage('');
     if (sessionStatus !== 'ready') {
@@ -127,6 +130,7 @@ export default function ScanPage() {
       }
 
       setRecognizedStall(stalls.find((stall) => stall.id === result.data.stall.stallNumber) ?? null);
+      setCheckinResult(result.data);
       setCheckinState('success');
       setMessage(
         `+${result.data.coinsAwarded} coins earned. You have visited ${result.data.stallsVisited} stalls.`
@@ -358,7 +362,40 @@ export default function ScanPage() {
               {recognizedStall.id} · {recognizedStall.title}
             </h2>
           )}
-          <p className="mt-2 text-xs leading-5 text-[#c2cfb0]">{message}</p>
+          {checkinState === 'success' && checkinResult ? (
+            <div className="checkin-reward mt-3">
+              <p className="coin-reward-pop" aria-label={`${checkinResult.coinsAwarded} coins earned`}>
+                +{checkinResult.coinsAwarded} <span>¢</span>
+              </p>
+              <p className="text-[10px] font-black tracking-[0.12em] text-[#c6e877]">COINS ADDED TO YOUR PASSPORT</p>
+              <p className="mt-1 text-xs text-[#c2cfb0]">{checkinResult.stallsVisited} stalls discovered in total</p>
+              {checkinResult.zoneProgress && (
+                <div className="mt-3">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="pixel-eyebrow">THIS ZONE</span>
+                    <span className="hud-label">
+                      {checkinResult.zoneProgress.visited}/{checkinResult.zoneProgress.total} · {checkinResult.zoneProgress.percentage}%
+                    </span>
+                  </div>
+                  <div
+                    className="reward-progress-track"
+                    role="progressbar"
+                    aria-label="Current zone exploration"
+                    aria-valuemin={0}
+                    aria-valuemax={checkinResult.zoneProgress.total}
+                    aria-valuenow={checkinResult.zoneProgress.visited}
+                  >
+                    <span style={{ width: `${checkinResult.zoneProgress.percentage}%` }} />
+                  </div>
+                </div>
+              )}
+              {checkinResult.voucherAvailable && (
+                <p className="mt-2 text-xs font-bold text-[#f6cb65]">A reward is available at this stall.</p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs leading-5 text-[#c2cfb0]">{message}</p>
+          )}
           {scannedContent && !recognizedStall && (
             <p className="mt-2 break-all font-mono text-[10px] text-[#8fa18a]">
               Captured: {scannedContent.slice(0, 160)}{scannedContent.length > 160 ? '…' : ''}

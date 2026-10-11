@@ -17,6 +17,12 @@ const profileSchema = z.object({
     title: z.string(),
     checkedInAt: z.string(),
   })),
+  zones: z.array(z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    visited: z.number().int().nonnegative(),
+    total: z.number().int().nonnegative(),
+  })),
   rewards: z.array(z.object({
     id: z.string().uuid(),
     title: z.string(),
@@ -177,6 +183,40 @@ export default function MePage() {
               {profile?.stallsVisited ?? '--'}<span className="text-sm text-[#9db39a]"> / {profile?.totalStalls ?? '--'}</span>
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="pixel-panel mt-4 p-4">
+        <div className="mb-4">
+          <p className="pixel-eyebrow text-lime-300">ZONE EXPLORATION</p>
+          <h2 className="mt-1 text-base font-black text-[#fff2c3]">Discover the fair</h2>
+        </div>
+        {!profile && <p className="text-sm text-[#b8c6aa]">Zone progress appears with your visitor passport.</p>}
+        {profile && profile.zones.length === 0 && (
+          <p className="text-sm text-[#b8c6aa]">No mapped zones are available for this event.</p>
+        )}
+        <div className="space-y-3">
+          {profile?.zones.map((zone) => {
+            const percentage = zone.total > 0 ? Math.round((zone.visited / zone.total) * 100) : 0;
+            return (
+              <div key={zone.id}>
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <p className="truncate text-xs font-bold text-[#fff2c3]">{zone.name}</p>
+                  <span className="hud-label">{zone.visited}/{zone.total} · {percentage}%</span>
+                </div>
+                <div
+                  className="reward-progress-track"
+                  role="progressbar"
+                  aria-label={`${zone.name} explored`}
+                  aria-valuemin={0}
+                  aria-valuemax={zone.total}
+                  aria-valuenow={zone.visited}
+                >
+                  <span style={{ width: `${percentage}%` }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
