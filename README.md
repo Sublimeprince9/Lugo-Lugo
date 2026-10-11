@@ -44,7 +44,7 @@ Apply the migrations and sample UMA event data:
 npx supabase db reset
 ```
 
-Anonymous sign-in is enabled for the local stack in `supabase/config.toml`. For a hosted project, run the SQL migrations in numbered order (`0001_init_schema.sql`, then `0002_claim_reward.sql`) and then `supabase/seed.sql` in the Supabase Dashboard SQL Editor. Run the seed only once; it inserts fixed sample IDs. In the Supabase Dashboard, enable anonymous sign-ins under Authentication provider settings. A disabled provider returns “Anonymous sign-ins are disabled” when the visitor session starts. Restart the Next.js server after changing `.env.local`.
+Anonymous sign-in is enabled for the local stack in `supabase/config.toml`. For a hosted project, run the SQL migrations in numbered order (`0001_init_schema.sql`, `0002_claim_reward.sql`, then `0003_profile_username_update.sql`) and then `supabase/seed.sql` in the Supabase Dashboard SQL Editor. Run the seed only once; it inserts fixed sample IDs. In the Supabase Dashboard, enable anonymous sign-ins under Authentication provider settings. A disabled provider returns “Anonymous sign-ins are disabled” when the visitor session starts. Restart the Next.js server after changing `.env.local`.
 
 Start the app:
 

@@ -457,7 +457,7 @@ Budget the map art as its own work item. It is the largest unknown in M1 and rep
 - [x] Map fog-of-war marker reveal/dim behavior
 - [x] Supabase-backed leaderboard view on the event and leaderboard pages (still needs cache policy)
 - [x] Profile screen: persisted coins, check-ins, and reward inventory
-- [ ] Profile username editing
+- [x] Profile username editing
 - [ ] Phone verification flow (OTP) for prize claims
 - [x] `/api/claim` with atomic claim limits (`0002_claim_reward.sql`; apply to hosted Supabase before enabling claims)
 - [x] Postgres-based check-in rate limiting (10 per visitor and 30 per IP per 10 minutes)

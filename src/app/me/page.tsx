@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { z } from 'zod';
 
 import { useVisitorSession } from '@/components/auth/VisitorSessionProvider';
+import { usernameSchema } from '@/lib/profile-validation';
 
 const profileSchema = z.object({
   success: z.literal(true),
@@ -53,6 +54,9 @@ export default function MePage() {
   const [loading, setLoading] = useState(false);
   const [claimingRewardId, setClaimingRewardId] = useState<string | null>(null);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
+  const [usernameDraft, setUsernameDraft] = useState('');
+  const [usernameSaving, setUsernameSaving] = useState(false);
+  const [usernameMessage, setUsernameMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (sessionStatus !== 'ready') return;
@@ -73,7 +77,10 @@ export default function MePage() {
           console.error('Profile API returned an invalid response.', parsed.error);
           throw new Error('Your visitor profile returned an unexpected response.');
         }
-        if (active) setProfile(parsed.data);
+        if (active) {
+          setProfile(parsed.data);
+          setUsernameDraft(parsed.data.username);
+        }
       })
       .catch((cause: unknown) => {
         if (active) setProfileError(cause instanceof Error ? cause.message : 'Could not load your visitor profile.');
@@ -125,6 +132,42 @@ export default function MePage() {
     }
   }
 
+  async function saveUsername(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsedUsername = usernameSchema.safeParse(usernameDraft);
+    if (!parsedUsername.success) {
+      setUsernameMessage(parsedUsername.error.issues[0]?.message ?? 'Enter a valid username.');
+      return;
+    }
+
+    setUsernameSaving(true);
+    setUsernameMessage(null);
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: parsedUsername.data }),
+      });
+      const payload: unknown = await response.json();
+      if (!response.ok) {
+        const errorPayload = z.object({ error: z.string() }).safeParse(payload);
+        throw new Error(errorPayload.success ? errorPayload.data.error : 'Could not save your username.');
+      }
+      const result = z.object({ success: z.literal(true), username: z.string() }).safeParse(payload);
+      if (!result.success) {
+        console.error('Profile update API returned an invalid response.', result.error);
+        throw new Error('The profile update returned an unexpected response.');
+      }
+      setProfile((current) => current ? { ...current, username: result.data.username } : current);
+      setUsernameDraft(result.data.username);
+      setUsernameMessage('Username saved.');
+    } catch (cause) {
+      setUsernameMessage(cause instanceof Error ? cause.message : 'Could not save your username.');
+    } finally {
+      setUsernameSaving(false);
+    }
+  }
+
   const activeRewards = profile?.rewards.filter((reward) => reward.isActive) ?? [];
   const availableRewards = activeRewards.filter((reward) => !reward.claimed);
   const claimedRewards = profile?.rewards.filter((reward) => reward.claimed) ?? [];
@@ -167,7 +210,30 @@ export default function MePage() {
           <div className="min-w-0 flex-1">
             <p className="pixel-eyebrow text-lime-300">VISITOR · LEVEL {profile ? String(Math.floor(profile.stallsVisited / 3) + 1).padStart(2, '0') : '--'}</p>
             <h1 className="mt-1 truncate text-xl font-black text-[#fff2c3]">Your Adventure</h1>
-            <p className="mt-1 truncate text-xs text-[#b8c6aa]">{profile?.username ?? 'Explorer'}</p>
+            {profile ? (
+              <form className="mt-2 flex gap-2" onSubmit={saveUsername}>
+                <label className="sr-only" htmlFor="visitor-username">Display name</label>
+                <input
+                  id="visitor-username"
+                  className="game-input min-w-0 flex-1"
+                  value={usernameDraft}
+                  onChange={(event) => setUsernameDraft(event.target.value)}
+                  maxLength={24}
+                  minLength={2}
+                  autoComplete="nickname"
+                  aria-describedby="username-help"
+                />
+                <button type="submit" className="pixel-button px-3" disabled={usernameSaving}>
+                  {usernameSaving ? 'SAVING' : 'SAVE'}
+                </button>
+                <p id="username-help" className="sr-only">2 to 24 English letters, numbers, spaces, dots, underscores, or hyphens.</p>
+              </form>
+            ) : (
+              <p className="mt-1 truncate text-xs text-[#b8c6aa]">Explorer</p>
+            )}
+            {usernameMessage && (
+              <p className="mt-1 text-[10px] text-[#c6e877]" role="status">{usernameMessage}</p>
+            )}
             <div className="xp-track mt-2 w-full"><span style={{ width: `${profile ? (profile.stallsVisited % 3) * 33.333 : 0}%` }} /></div>
           </div>
         </div>

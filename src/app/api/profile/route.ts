@@ -6,6 +6,7 @@ import {
   getSupabaseServerConfig,
   type SupabaseResponseCookie,
 } from '@/lib/supabase/server';
+import { updateUsernameBodySchema } from '@/lib/profile-validation';
 
 const eventSlug = 'uma-fair-2026';
 const zoneSchema = z.object({
@@ -161,4 +162,64 @@ export async function GET(request: NextRequest) {
         && claimsByReward.get(reward.id)?.redeemed_at !== undefined,
     })),
   }, 200);
+}
+
+export async function PATCH(request: NextRequest) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return response({ error: 'Request body must be valid JSON.' }, 400);
+  }
+
+  const parsedBody = updateUsernameBodySchema.safeParse(body);
+  if (!parsedBody.success) {
+    const issue = parsedBody.error.issues[0];
+    const message = issue?.code === 'unrecognized_keys'
+      ? 'A valid username is required.'
+      : issue?.message ?? 'A valid username is required.';
+    return response({ error: message }, 400);
+  }
+
+  let config;
+  try {
+    config = getSupabaseServerConfig();
+  } catch (cause) {
+    console.error('Profile service is not configured.', cause);
+    return response({ error: 'Profile editing is unavailable because the server is not configured.' }, 503);
+  }
+
+  const cookiesToSet = new Map<string, SupabaseResponseCookie>();
+  const supabase = createRequestSupabaseClient(
+    request,
+    config.url,
+    config.anonKey,
+    (cookies) => cookies.forEach((cookie) => cookiesToSet.set(cookie.name, cookie)),
+  );
+  const sendResponse = (body: unknown, status: number) => response(body, status, Array.from(cookiesToSet.values()));
+
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) {
+    return sendResponse({ error: 'Sign in as a visitor to edit your profile.' }, 401);
+  }
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .update({ username: parsedBody.data.username })
+    .eq('id', authData.user.id)
+    .select('username')
+    .maybeSingle();
+  if (error) {
+    if (error.code === '42501') {
+      console.error('Profile username update permission is missing; apply migration 0003.', error);
+      return sendResponse({ error: 'Profile editing is not enabled on this server yet.' }, 503);
+    }
+    console.error('Could not update visitor username.', error);
+    return sendResponse({ error: 'Could not save your username. Please try again.' }, 500);
+  }
+  if (!profile) {
+    return sendResponse({ error: 'Your visitor profile could not be found.' }, 404);
+  }
+
+  return sendResponse({ success: true, username: profile.username }, 200);
 }

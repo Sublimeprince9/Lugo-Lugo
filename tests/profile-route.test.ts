@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { NextRequest } from 'next/server';
 
-import { GET } from '../src/app/api/profile/route';
+import { GET, PATCH } from '../src/app/api/profile/route';
 
 const protectedEnvironmentKeys = [
   'NEXT_PUBLIC_SUPABASE_URL',
@@ -29,4 +29,26 @@ test('profile requires an authenticated visitor', async () => {
       else process.env[key] = value;
     }
   }
+});
+
+test('profile username update rejects invalid names before authentication', async () => {
+  const response = await PATCH(new NextRequest('http://localhost/api/profile', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: ' ' }),
+  }));
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: 'Username must be at least 2 characters.' });
+});
+
+test('profile username update rejects unexpected fields', async () => {
+  const response = await PATCH(new NextRequest('http://localhost/api/profile', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'Explorer', phone_verified: true }),
+  }));
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /valid username/i);
 });
