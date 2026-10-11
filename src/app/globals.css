@@ -319,6 +319,7 @@ body {
 .food-dot { background: #ff9e58; }
 .tech-dot { background: #c795ff; }
 .farm-dot { background: #a5d86d; }
+.undiscovered-dot { background: #849182; opacity: 0.55; }
 
 .map-zoom-controls {
   position: absolute;

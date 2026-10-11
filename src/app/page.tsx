@@ -16,6 +16,7 @@ const profileStatsSchema = z.object({
   coins: z.number().int().nonnegative(),
   stallsVisited: z.number().int().nonnegative(),
   totalStalls: z.number().int().nonnegative(),
+  visitedStalls: z.array(z.string()),
 });
 
 export default function HomePage() {
@@ -153,6 +154,7 @@ export default function HomePage() {
                 selectedCategory={selectedCategory}
                 selectedStall={currentSelection}
                 onSelect={selectStall}
+                visitedStallNumbers={profileStats?.visitedStalls ?? null}
               />
             ) : (
               <section className="pixel-panel p-4" role="status">

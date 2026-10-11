@@ -145,6 +145,9 @@ export async function GET(request: NextRequest) {
       total: zone.total,
     })),
     checkins: formattedCheckins,
+    visitedStalls: formattedCheckins
+      .filter((checkin) => checkin !== null)
+      .map((checkin) => checkin.stallNumber),
     rewards: rewardsResult.data.map((reward) => ({
       id: reward.id,
       title: reward.title,

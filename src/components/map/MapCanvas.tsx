@@ -32,10 +32,12 @@ function createMapArt(
   PIXI: typeof import('pixi.js'),
   stalls: Stall[],
   onSelect: (stall: Stall) => void,
+  visitedStallNumbers: string[] | null,
 ) {
   const world = new PIXI.Container();
   world.eventMode = 'static';
   world.hitArea = new PIXI.Rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+  const boothMarkers = new Map<string, { marker: Container; label: PixiText }>();
 
   const ground = new PIXI.Graphics();
   createBlock(ground, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0x598b4e);
@@ -109,13 +111,14 @@ function createMapArt(
     world.addChild(sign, text);
   }
 
-  const boothGraphics = new PIXI.Graphics();
-  const boothLabels: PixiText[] = [];
-  const boothTargets: Graphics[] = [];
   for (const stall of stalls) {
     const x = 25 + stall.x * 9.05;
     const y = 202 + stall.y * 4.55;
     const color = CATEGORY_COLORS[stall.category];
+    const marker = new PIXI.Container();
+    const boothGraphics = new PIXI.Graphics();
+    const isVisited = visitedStallNumbers?.includes(stall.id) ?? true;
+    marker.alpha = isVisited ? 1 : 0.48;
 
     createBlock(boothGraphics, x - 22, y + 19, 54, 8, 0x344b32);
     createBlock(boothGraphics, x - 18, y + 4, 46, 20, 0x6a4a36);
@@ -129,7 +132,7 @@ function createMapArt(
     createBlock(boothGraphics, x - 1, y + 11, 10, 7, 0xa9d68d);
 
     const label = new PIXI.Text({
-      text: stall.id,
+      text: isVisited ? stall.id : '??',
       style: new PIXI.TextStyle({
         fontFamily: 'monospace',
         fontSize: 12,
@@ -141,7 +144,6 @@ function createMapArt(
     label.anchor.set(0.5);
     label.x = x + 5;
     label.y = y - 20;
-    boothLabels.push(label);
 
     const target = new PIXI.Graphics();
     target.rect(x - 28, y - 18, 66, 54).fill({ color: 0xffffff, alpha: 0.001 });
@@ -152,9 +154,10 @@ function createMapArt(
       event.stopPropagation();
       onSelect(stall);
     });
-    boothTargets.push(target);
+    marker.addChild(boothGraphics, label, target);
+    world.addChild(marker);
+    boothMarkers.set(stall.id, { marker, label });
   }
-  world.addChild(boothGraphics, ...boothLabels, ...boothTargets);
 
   const marquee = new PIXI.Graphics();
   createBlock(marquee, 383, 12, 178, 48, 0x443d2d);
@@ -175,7 +178,7 @@ function createMapArt(
   title.y = 36;
   world.addChild(marquee, title);
 
-  return { world, boothTargets };
+  return { world, boothMarkers };
 }
 
 export function MapCanvas({
@@ -183,15 +186,20 @@ export function MapCanvas({
   selectedStall,
   selectedCategory,
   onSelect,
+  visitedStallNumbers,
 }: {
   stalls: Stall[];
   selectedStall: Stall;
   selectedCategory: Category;
   onSelect: (stall: Stall) => void;
+  visitedStallNumbers: string[] | null;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<Container | null>(null);
   const appRef = useRef<Application | null>(null);
+  const boothMarkersRef = useRef<Map<string, { marker: Container; label: PixiText }>>(new Map());
+  const visitedStallNumbersRef = useRef(visitedStallNumbers);
+  visitedStallNumbersRef.current = visitedStallNumbers;
   const [zoom, setZoom] = useState(1);
   const [mapError, setMapError] = useState<string | null>(null);
   const zoomRef = useRef(zoom);
@@ -227,10 +235,15 @@ export function MapCanvas({
         nextApp.canvas.setAttribute('aria-label', 'Interactive pixel-art map of UMA Showgrounds');
         mount.appendChild(nextApp.canvas);
 
-        const { world, boothTargets } = createMapArt(PIXI, stalls, onSelect);
+        const { world, boothMarkers } = createMapArt(
+          PIXI,
+          stalls,
+          onSelect,
+          visitedStallNumbersRef.current,
+        );
         worldRef.current = world;
+        boothMarkersRef.current = boothMarkers;
         nextApp.stage.addChild(world);
-        for (const target of boothTargets) target.cursor = 'pointer';
 
         const fitMap = () => {
           if (!app || !mount.isConnected) return;
@@ -289,10 +302,21 @@ export function MapCanvas({
       cancelled = true;
       dispose?.();
       worldRef.current = null;
+      boothMarkersRef.current.clear();
       appRef.current = null;
       app?.destroy({ removeView: true }, { children: true });
     };
   }, [onSelect, stalls]);
+
+  useEffect(() => {
+    if (!visitedStallNumbers) return;
+    const visited = new Set(visitedStallNumbers);
+    boothMarkersRef.current.forEach(({ marker, label }, stallNumber) => {
+      const isVisited = visited.has(stallNumber);
+      marker.alpha = isVisited ? 1 : 0.48;
+      label.text = isVisited ? stallNumber : '??';
+    });
+  }, [visitedStallNumbers]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -323,6 +347,7 @@ export function MapCanvas({
           <span><i className="legend-dot food-dot" /> FOOD</span>
           <span><i className="legend-dot tech-dot" /> TECH</span>
           <span><i className="legend-dot farm-dot" /> FARM</span>
+          <span><i className="legend-dot undiscovered-dot" /> UNDISCOVERED</span>
         </div>
         <div className="map-zoom-controls" aria-label="Map zoom controls">
           <button

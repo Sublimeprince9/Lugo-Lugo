@@ -454,7 +454,7 @@ Budget the map art as its own work item. It is the largest unknown in M1 and rep
 - [x] Scanner page with camera permission handling and a manual-code lookup fallback
 - [x] `/api/checkin` with static HMAC QR verification, auth check, and an atomic Postgres RPC
 - [x] Coin reward animation/toast and per-zone progress summaries
-- [ ] Map fog-of-war reveal/dim behavior
+- [x] Map fog-of-war marker reveal/dim behavior
 - [x] Supabase-backed leaderboard view on the event and leaderboard pages (still needs cache policy)
 - [x] Profile screen: persisted coins, check-ins, and reward inventory
 - [ ] Profile username editing
