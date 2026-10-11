@@ -11,7 +11,7 @@ loadEnv({ path: '.env.local' });
 async function main() {
   const slug = process.argv[2];
   if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
-    throw new Error('Usage: npm run qr:urls -- <event-slug>');
+    throw new Error('Usage: npm run qr:generate -- <event-slug>');
   }
 
   const config = getSupabaseServerConfig();
