@@ -52,13 +52,13 @@ Start the app:
 npm run dev
 ```
 
-Open http://localhost:3000. To create printable static QR SVGs for the seeded fair:
+Open http://localhost:3000. After a real vendor application has been approved in `/organizer`, generate that vendor's QR and print sheet using its application ID (shown in the organizer review queue or on the vendor's submission confirmation):
 
 ```bash
-npm run qr:generate -- uma-fair-2026
+npm run qr:generate -- uma-fair-2026 --application <approved-application-id>
 ```
 
-The SVGs are written to `public/qr/uma-fair-2026/` and ignored by git. Regenerate them only when the event or signing secret changes.
+The approved application ID is required so sample or unregistered event stalls cannot accidentally receive vendor print sheets. The individual vendor SVG and A4 print sheet are written under `public/qr/uma-fair-2026/<stall-number>/` and ignored by git. Print and give only that vendor's sheet to them. Regenerate it if the event or signing secret changes.
 
 For QR codes intended for the hosted app, `QR_SIGNING_SECRET` in the local generator environment must exactly match the deployed app's `QR_SIGNING_SECRET`, and `NEXT_PUBLIC_APP_URL` must be set to the hosted origin. For example:
 

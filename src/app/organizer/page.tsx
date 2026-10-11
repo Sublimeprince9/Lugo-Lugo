@@ -213,6 +213,7 @@ export default function OrganizerPage() {
                   <p className="pixel-eyebrow text-lime-300">STALL {application.stallNumber} · {application.category}</p>
                   <h2 className="mt-1 text-lg font-black text-[#fff2c3]">{application.businessName}</h2>
                   <p className="text-xs text-[#8fa18a]">{application.zoneName} · pin {application.mapX}%, {application.mapY}%</p>
+                  <p className="mt-1 break-all font-mono text-[9px] text-[#829984]">Application ID: {application.id}</p>
                 </div>
                 <span className="shrink-0 border border-[#526b50] px-2 py-1 text-[9px] font-bold uppercase text-lime-200">
                   {application.status.replace('_', ' ')}
