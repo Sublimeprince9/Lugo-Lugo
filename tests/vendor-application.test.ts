@@ -30,6 +30,31 @@ test('vendor application accepts a complete application without photos or gift',
   if (result.success) assert.equal(result.data.websiteUrl, 'https://example.com');
 });
 
+test('vendor application can be submitted before a stall number or map location is assigned', () => {
+  const result = vendorApplicationSchema.safeParse({
+    ...validApplication,
+    stallNumber: '',
+    zoneName: '',
+    mapX: null,
+    mapY: null,
+  });
+  assert.equal(result.success, true);
+  if (result.success) {
+    assert.equal(result.data.stallNumber, null);
+    assert.equal(result.data.zoneName, null);
+    assert.equal(result.data.mapX, null);
+    assert.equal(result.data.mapY, null);
+  }
+});
+
+test('vendor application rejects incomplete suggested map locations', () => {
+  const result = vendorApplicationSchema.safeParse({
+    ...validApplication,
+    zoneName: '',
+  });
+  assert.equal(result.success, false);
+});
+
 test('vendor application requires all details when proposing a gift', () => {
   const result = vendorApplicationSchema.safeParse({
     ...validApplication,

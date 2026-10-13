@@ -427,13 +427,13 @@ Run the first pilot as invite-and-review onboarding: vendors can submit and main
 
 ### Vendor journey
 
-1. Organizer invites a vendor and confirms the event, stall number, and primary contact from the exhibitor list.
+1. Organizer shares the public application link. Vendors may register business and contact details before the real stall roster is uploaded; a stall number is optional at this stage.
 2. Vendor signs in using a recoverable vendor account (passwordless email link is the initial recommendation; keep visitor anonymous auth separate).
 3. Vendor completes a draft profile: business/display name, category, description, WhatsApp number, optional website, and stall location on the event map.
 4. Vendor optionally uploads or takes photos on a phone, confirms permission to publish them, and previews the public listing.
 5. Vendor optionally proposes a limited gift/voucher: visitor-facing description and terms, quantity/claim limit, and whether phone verification is required. The offer is not visible or claimable until approved.
 6. Organizer reviews vendor ownership, listing details, map location, photo consent/content, and gift terms; returns incomplete submissions or approves/rejects them.
-7. Approved listing and offer become public. Generate the signed stall QR only for the verified stall, provide it to the vendor, and record approval/QR issuance.
+7. Once the official stall roster and map are available, the organizer assigns/verifies each vendor's stall number, zone, and map position. Approved listing and offer become public. Generate the signed stall QR only for the verified stall, provide it to the vendor, and record approval/QR issuance.
 8. Vendor can request edits later; changes to stall identity, ownership, location, photos, or gift terms return to review when they affect visitor trust or existing claims.
 
 ### Implementation decisions and safeguards
@@ -442,6 +442,7 @@ Run the first pilot as invite-and-review onboarding: vendors can submit and main
 - **Review lifecycle:** model draft, submitted, needs-changes, approved/published, and rejected states with reviewer, timestamps, and reason. Public map queries must include approved/published records only.
 - **Profile fields:** add `website_url`; keep validated phone/WhatsApp separate from the vendor login email. Store photos in a private upload flow with size/type limits, then expose only approved images via public storage paths or controlled image delivery. Vendor photo consent is required.
 - **Location:** require a pin/coordinates on the event floor plan (existing `map_x`/`map_y`, scoped to event map dimensions). Provide organizer correction and preview. Do not use visitor GPS as check-in proof.
+- **Pre-registration:** business/contact details can be collected before stall numbers or map zones are assigned. Keep the application private and unapproved until an organizer can assign a unique official stall number and verified event-map location.
 - **Optional outdoor GPS:** if needed, add nullable WGS84 latitude/longitude for a stall, collected only for outdoor placements or entrance guidance. State its public use, validate ranges, and keep it independent of floor-plan coordinates. Indoor GPS and live visitor tracking remain out of scope.
 - **Gifts:** reuse `rewards` and the atomic claim path, including the configured quantity/claim limit and one claim per visitor. Do not allow vendors to alter a reward after claims exist without review. Redemption still needs authenticated exhibitor tooling; for the first pilot, document any manual redemption procedure. Decide phone-verification policy per offer; OTP is a prerequisite only where a reward requires verified phone.
 - **QR security:** only organizers issue signed QR codes after stall ownership/location approval. Vendor profile edits must never expose `qr_secret` or grant access to QR-signing credentials.

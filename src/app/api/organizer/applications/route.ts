@@ -11,6 +11,10 @@ const reviewBodySchema = z.object({
   applicationId: z.string().uuid(),
   status: z.enum(['needs_changes', 'approved', 'rejected']),
   reviewNotes: z.string().trim().max(1000),
+  stallNumber: z.string().trim().max(32).nullable().optional(),
+  zoneId: z.string().uuid().nullable().optional(),
+  mapX: z.number().int().min(0).max(100).nullable().optional(),
+  mapY: z.number().int().min(0).max(100).nullable().optional(),
 }).strict();
 const applicationSchema = z.object({
   id: z.string().uuid(),
@@ -19,12 +23,12 @@ const applicationSchema = z.object({
   contact_email: z.string(),
   whatsapp: z.string(),
   website_url: z.string().nullable(),
-  stall_number: z.string(),
+  stall_number: z.string().nullable(),
   category: z.string(),
   description: z.string(),
-  zone_id: z.string().uuid(),
-  map_x: z.number().int(),
-  map_y: z.number().int(),
+  zone_id: z.string().uuid().nullable(),
+  map_x: z.number().int().nullable(),
+  map_y: z.number().int().nullable(),
   photo_paths: z.array(z.string()),
   photo_consent: z.boolean(),
   gift_title: z.string().nullable(),
@@ -42,6 +46,7 @@ const reviewResultSchema = z.object({
   stallId: z.string().uuid().nullable(),
   rewardId: z.string().uuid().nullable(),
 });
+const eventSchema = z.object({ id: z.string().uuid() });
 
 function response(
   body: unknown,
@@ -65,9 +70,25 @@ export async function GET(request: NextRequest) {
   );
   if (!access.authorized) return sendResponse({ error: access.error }, access.status);
 
+  const { data: eventData, error: eventError } = await access.admin
+    .from('events')
+    .select('id')
+    .eq('slug', 'uma-fair-2026')
+    .maybeSingle();
+  if (eventError) {
+    console.error('Could not load the organizer review event.', eventError);
+    return sendResponse({ error: 'Could not load the event for vendor review.' }, 500);
+  }
+  const event = eventSchema.safeParse(eventData);
+  if (!event.success) {
+    console.error('Organizer review event is missing or invalid.', event.success ? undefined : event.error);
+    return sendResponse({ error: 'The event for vendor review is unavailable.' }, 503);
+  }
+
   const { data, error } = await access.admin
     .from('vendor_applications')
     .select('id, business_name, contact_name, contact_email, whatsapp, website_url, stall_number, category, description, zone_id, map_x, map_y, photo_paths, photo_consent, gift_title, gift_details, gift_quantity, status, review_notes, created_at, reviewed_at')
+    .eq('event_id', event.data.id)
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) {
@@ -81,10 +102,11 @@ export async function GET(request: NextRequest) {
     return sendResponse({ error: 'Vendor applications returned an invalid response.' }, 500);
   }
 
-  const zoneIds = Array.from(new Set(parsedApplications.data.map((application) => application.zone_id)));
-  const { data: zonesData, error: zonesError } = zoneIds.length > 0
-    ? await access.admin.from('zones').select('id, name').in('id', zoneIds)
-    : { data: [], error: null };
+  const { data: zonesData, error: zonesError } = await access.admin
+    .from('zones')
+    .select('id, name')
+    .eq('event_id', event.data.id)
+    .order('name');
   if (zonesError) {
     console.error('Could not load organizer application zones.', zonesError);
     return sendResponse({ error: 'Could not load application map locations.' }, 500);
@@ -110,6 +132,7 @@ export async function GET(request: NextRequest) {
 
   return sendResponse({
     success: true,
+    zones: zones.data,
     applications: parsedApplications.data.map((application) => ({
       id: application.id,
       businessName: application.business_name,
@@ -120,9 +143,10 @@ export async function GET(request: NextRequest) {
       stallNumber: application.stall_number,
       category: application.category,
       description: application.description,
-      zoneName: zoneNames.get(application.zone_id) ?? 'Unknown zone',
-      mapX: Math.round(application.map_x / 9.6),
-      mapY: Math.round(application.map_y / 7),
+      zoneId: application.zone_id,
+      zoneName: application.zone_id ? zoneNames.get(application.zone_id) ?? 'Unknown zone' : null,
+      mapX: application.map_x === null ? null : Math.round(application.map_x / 9.6),
+      mapY: application.map_y === null ? null : Math.round(application.map_y / 7),
       photoConsent: application.photo_consent,
       photos: application.photo_paths.map((path) => photoUrls.get(path)).filter((url): url is string => Boolean(url)),
       giftTitle: application.gift_title,
@@ -161,6 +185,14 @@ export async function PATCH(request: NextRequest) {
     p_status: parsedBody.data.status,
     p_review_notes: parsedBody.data.reviewNotes || null,
     p_reviewed_by: access.userId,
+    p_stall_number: parsedBody.data.stallNumber ?? null,
+    p_zone_id: parsedBody.data.zoneId ?? null,
+    p_map_x: parsedBody.data.mapX === undefined || parsedBody.data.mapX === null
+      ? null
+      : Math.round(parsedBody.data.mapX * 9.6),
+    p_map_y: parsedBody.data.mapY === undefined || parsedBody.data.mapY === null
+      ? null
+      : Math.round(parsedBody.data.mapY * 7),
   });
   if (error) {
     if (error.code === '23505') {
@@ -168,6 +200,9 @@ export async function PATCH(request: NextRequest) {
     }
     if (error.code === '23514') {
       return sendResponse({ error: 'An approved application cannot be changed through this review queue.' }, 409);
+    }
+    if (error.code === '22023') {
+      return sendResponse({ error: 'Assign a valid stall number, event zone, and map position before approving.' }, 400);
     }
     if (error.code === 'P0002') return sendResponse({ error: 'The application no longer exists.' }, 404);
     if (error.code === '42883' || error.code === 'PGRST202') {

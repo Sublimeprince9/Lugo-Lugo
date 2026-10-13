@@ -13,6 +13,15 @@ const optionalHttpUrl = z.string()
     }
   }, 'Enter a valid website beginning with http:// or https://.')
   .transform((value) => value || null);
+const optionalStallNumber = z.string()
+  .trim()
+  .max(32)
+  .refine((value) => value === '' || /^[a-z0-9 _-]+$/i.test(value), 'Enter a valid stall number.')
+  .transform((value) => value || null);
+const optionalZoneName = z.string()
+  .trim()
+  .max(100)
+  .transform((value) => value || null);
 
 export const vendorApplicationSchema = z.object({
   businessName: z.string().trim().min(2).max(100),
@@ -21,12 +30,12 @@ export const vendorApplicationSchema = z.object({
   whatsapp: z.string().trim().min(7).max(32)
     .refine((value) => (value.match(/\d/g) ?? []).length >= 7, 'Enter a valid WhatsApp number.'),
   websiteUrl: optionalHttpUrl,
-  stallNumber: z.string().trim().min(1).max(32).regex(/^[a-z0-9 _-]+$/i),
+  stallNumber: optionalStallNumber,
   category: z.enum(['Luxury', 'Food', 'Drinks', 'Science', 'Farming', 'Tech', 'Other']),
   description: z.string().trim().min(10).max(1200),
-  zoneName: z.string().trim().min(1).max(100),
-  mapX: z.number().int().min(0).max(100),
-  mapY: z.number().int().min(0).max(100),
+  zoneName: optionalZoneName,
+  mapX: z.number().int().min(0).max(100).nullable(),
+  mapY: z.number().int().min(0).max(100).nullable(),
   giftTitle: z.string().trim().max(100),
   giftDetails: z.string().trim().max(600),
   giftQuantity: z.number().int().min(1).max(10000).nullable(),
@@ -46,6 +55,15 @@ export const vendorApplicationSchema = z.object({
       code: 'custom',
       path: ['photoConsent'],
       message: 'Confirm that you have permission to share the selected photos.',
+    });
+  }
+  const hasAnyLocation = value.zoneName !== null || value.mapX !== null || value.mapY !== null;
+  const hasCompleteLocation = value.zoneName !== null && value.mapX !== null && value.mapY !== null;
+  if (hasAnyLocation && !hasCompleteLocation) {
+    context.addIssue({
+      code: 'custom',
+      path: ['zoneName'],
+      message: 'Provide the zone and both map positions, or leave the location blank for the organizer.',
     });
   }
 });

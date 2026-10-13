@@ -17,7 +17,6 @@ import {
 export const runtime = 'nodejs';
 
 const eventSlug = 'uma-fair-2026';
-const categoryValues = ['Luxury', 'Food', 'Drinks', 'Science', 'Farming', 'Tech', 'Other'] as const;
 const photoMimeTypes = new Map([
   ['image/jpeg', 'jpg'],
   ['image/png', 'png'],
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
     stallNumber: form.get('stallNumber'),
     category: form.get('category'),
     description: form.get('description'),
-    zoneName: form.get('zoneName'),
+    zoneName: form.get('zoneName') ?? '',
     mapX: parseOptionalInteger(form.get('mapX')),
     mapY: parseOptionalInteger(form.get('mapY')),
     giftTitle,
@@ -137,17 +136,21 @@ export async function POST(request: NextRequest) {
   }
   if (!event) return response({ error: 'Vendor applications are not open for this event.' }, 404);
 
-  const { data: zone, error: zoneError } = await admin
-    .from('zones')
-    .select('id')
-    .eq('event_id', event.id)
-    .eq('name', parsed.data.zoneName)
-    .maybeSingle();
-  if (zoneError) {
-    console.error('Could not verify the vendor application zone.', zoneError);
-    return response({ error: 'Could not verify the map location. Please try again later.' }, 503);
+  let zoneId: string | null = null;
+  if (parsed.data.zoneName) {
+    const { data: zone, error: zoneError } = await admin
+      .from('zones')
+      .select('id')
+      .eq('event_id', event.id)
+      .eq('name', parsed.data.zoneName)
+      .maybeSingle();
+    if (zoneError) {
+      console.error('Could not verify the vendor application zone.', zoneError);
+      return response({ error: 'Could not verify the map location. Please try again later.' }, 503);
+    }
+    if (!zone) return response({ error: 'Select a zone from the active event map.' }, 400);
+    zoneId = zone.id;
   }
-  if (!zone) return response({ error: 'Select a zone from the active event map.' }, 400);
 
   const uploadedPaths: string[] = [];
   let uploadFailure: string | null = null;
@@ -185,9 +188,9 @@ export async function POST(request: NextRequest) {
       stall_number: parsed.data.stallNumber,
       category: parsed.data.category,
       description: parsed.data.description,
-      zone_id: zone.id,
-      map_x: Math.round(parsed.data.mapX * 9.6),
-      map_y: Math.round(parsed.data.mapY * 7),
+      zone_id: zoneId,
+      map_x: parsed.data.mapX === null ? null : Math.round(parsed.data.mapX * 9.6),
+      map_y: parsed.data.mapY === null ? null : Math.round(parsed.data.mapY * 7),
       photo_paths: uploadedPaths,
       photo_consent: parsed.data.photoConsent === 'true',
       gift_title: parsed.data.giftTitle || null,

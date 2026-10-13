@@ -1,10 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { z } from 'zod';
 
-import { useEventData } from '@/lib/use-event-data';
 import { categories } from '@/lib/event-data';
 
 const responseSchema = z.object({
@@ -17,16 +16,9 @@ const maximumPhotos = 3;
 const maximumPhotoBytes = 5 * 1024 * 1024;
 
 export default function VendorApplicationPage() {
-  const { data: eventData, error: eventError, loading: eventLoading } = useEventData();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
-  const [mapX, setMapX] = useState(50);
-  const [mapY, setMapY] = useState(50);
-  const zones = useMemo(
-    () => Array.from(new Set(eventData?.stalls.map((stall) => stall.zone) ?? [])).sort(),
-    [eventData?.stalls],
-  );
 
   async function submitApplication(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,8 +26,6 @@ export default function VendorApplicationPage() {
     setError(null);
 
     const form = new FormData(event.currentTarget);
-    form.set('mapX', String(mapX));
-    form.set('mapY', String(mapY));
     try {
       const response = await fetch('/api/vendor-applications', {
         method: 'POST',
@@ -70,16 +60,9 @@ export default function VendorApplicationPage() {
         <p className="pixel-eyebrow text-lime-300">JOIN THE FAIR</p>
         <h1 className="mt-1 text-xl font-black text-[#fff2c3]">Vendor application</h1>
         <p className="mt-2 text-xs leading-5 text-[#b8c6aa]">
-          Submit your stall details for organizer review. Your listing will not appear on the visitor map until it is approved.
+          Share your business details with the organizer. You can apply before your stall number or map location has been assigned.
         </p>
       </section>
-
-      {(eventLoading || eventError) && (
-        <section className="pixel-panel mb-4 p-4" role={eventError ? 'alert' : 'status'}>
-          <p className="pixel-eyebrow">{eventError ? 'EVENT MAP UNAVAILABLE' : 'LOADING EVENT MAP'}</p>
-          <p className="mt-2 text-xs text-[#b8c6aa]">{eventError ?? 'Loading event zones for stall placement…'}</p>
-        </section>
-      )}
 
       {applicationId ? (
         <section className="pixel-panel p-5" role="status">
@@ -103,10 +86,10 @@ export default function VendorApplicationPage() {
               <input name="businessName" className="game-input" minLength={2} maxLength={100} required />
             </label>
             <label className="form-field">
-              <span>Stall number from your organizer</span>
-              <input name="stallNumber" className="game-input" maxLength={32} required />
+              <span>Stall number (optional if not assigned yet)</span>
+              <input name="stallNumber" className="game-input" maxLength={32} />
             </label>
-            <p className="text-[10px] leading-4 text-[#8fa18a]">Entering a stall number does not grant ownership. The event organizer will verify it.</p>
+            <p className="text-[10px] leading-4 text-[#8fa18a]">Leave blank if the organizer has not assigned your stall number. Any number you enter will be verified before approval.</p>
             <label className="form-field">
               <span>Category</span>
               <select name="category" className="game-input" required defaultValue="">
@@ -140,36 +123,6 @@ export default function VendorApplicationPage() {
             <label className="form-field">
               <span>Website (optional)</span>
               <input name="websiteUrl" className="game-input" type="url" placeholder="https://" maxLength={2048} />
-            </label>
-          </section>
-
-          <section className="pixel-panel space-y-3 p-4">
-            <div>
-              <p className="pixel-eyebrow text-lime-300">03 · MAP PLACEMENT</p>
-              <h2 className="mt-1 font-black text-[#fff2c3]">Where is your stall?</h2>
-            </div>
-            <label className="form-field">
-              <span>Event zone</span>
-              <select name="zoneName" className="game-input" required defaultValue="">
-                <option value="" disabled>Select the closest zone</option>
-                {zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
-              </select>
-            </label>
-            <p className="text-[10px] leading-4 text-[#8fa18a]">
-              Place the marker approximately on the event map. An organizer will confirm the exact position before publishing.
-            </p>
-            <div className="vendor-location-preview" aria-label={`Approximate map position, horizontal ${mapX} percent, vertical ${mapY} percent`}>
-              <span className="vendor-map-road vendor-map-road-horizontal" />
-              <span className="vendor-map-road vendor-map-road-vertical" />
-              <span className="vendor-map-pin" style={{ left: `${mapX}%`, top: `${mapY}%` }}>★</span>
-            </div>
-            <label className="form-field">
-              <span>Horizontal position: {mapX}%</span>
-              <input name="mapX" type="range" min="0" max="100" value={mapX} onChange={(event) => setMapX(Number(event.target.value))} />
-            </label>
-            <label className="form-field">
-              <span>Vertical position: {mapY}%</span>
-              <input name="mapY" type="range" min="0" max="100" value={mapY} onChange={(event) => setMapY(Number(event.target.value))} />
             </label>
           </section>
 
@@ -225,7 +178,7 @@ export default function VendorApplicationPage() {
           </section>
 
           {error && <p className="pixel-panel p-3 text-sm text-rose-200" role="alert">{error}</p>}
-          <button type="submit" className="pixel-button w-full" disabled={submitting || !eventData || zones.length === 0}>
+          <button type="submit" className="pixel-button w-full" disabled={submitting}>
             {submitting ? 'SENDING APPLICATION…' : 'SUBMIT FOR ORGANIZER REVIEW'}
           </button>
           <p className="pb-4 text-center text-[10px] leading-4 text-[#829984]">
